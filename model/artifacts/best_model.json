@@ -1,0 +1,8 @@
+{
+  "model": "LinearRegression",
+  "val_mae": 0.7761857465634096,
+  "val_rmse": 0.9957623597545272,
+  "test_mae": 1.188717588147774,
+  "test_rmse": 1.3156828738307194,
+  "params": {}
+}

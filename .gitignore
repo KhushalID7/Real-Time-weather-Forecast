@@ -1,1 +1,8 @@
 /.env
+
+# Ignore __pycache__ directories in any location
+__pycache__/
+
+# Ignore Python bytecode
+*.py[cod]
+*$py.class
