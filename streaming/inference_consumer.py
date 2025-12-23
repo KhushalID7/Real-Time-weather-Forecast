@@ -11,13 +11,14 @@ from collections import deque
 
 from model.inference import ModelInferenceEngine
 
+os.makedirs("data/predictions", exist_ok=True)
 
 # =========================================================
 # Configuration
 # =========================================================
 TOPIC = "weather_raw"
 BOOTSTRAP_SERVERS = "localhost:9092"
-WINDOW_SIZE = 6
+WINDOW_SIZE = 6              # number of lags used in training
 CONSUMER_GROUP = "weather-inference-group"
 
 
@@ -29,46 +30,40 @@ consumer = KafkaConsumer(
     bootstrap_servers=BOOTSTRAP_SERVERS,
     value_deserializer=lambda v: json.loads(v.decode("utf-8")),
     group_id=CONSUMER_GROUP,
-    auto_offset_reset="latest"   # real-time inference
+    auto_offset_reset="latest"
 )
 
 
 # =========================================================
 # Sliding Window Buffer
 # =========================================================
-buffer = deque(maxlen=WINDOW_SIZE)
+buffer = deque(maxlen=WINDOW_SIZE + 1)   # include current + 6 previous
 
 
 # =========================================================
 # Load Best Model Automatically
 # =========================================================
 engine = ModelInferenceEngine()
-
 print("🚀 Inference consumer started")
 
 
 # =========================================================
-# Feature Builder (MUST MATCH TRAINING)
+# Feature Builder (must match training)
 # =========================================================
-def build_features(window):
+def build_features(prev_window):
     """
-    Build feature row exactly as used during training
-    (NO raw temperature/humidity/pressure columns)
+    Build feature row from the previous 6 records (t-1..t-6).
     """
     row = {}
-
-    # Lag features: t-1 → t-6
-    for i, record in enumerate(reversed(window), start=1):
+    for i, record in enumerate(reversed(prev_window), start=1):
         row[f"temp_t-{i}"] = record["temperature"]
         row[f"humidity_t-{i}"] = record["humidity"]
         row[f"wind_speed_t-{i}"] = record["wind_speed"]
         row[f"pressure_t-{i}"] = record["pressure"]
 
-    # Time features
-    ts = pd.to_datetime(window[-1]["timestamp"])
+    ts = pd.to_datetime(prev_window[-1]["timestamp"])
     row["hour"] = ts.hour
     row["day_of_week"] = ts.dayofweek
-
     return pd.DataFrame([row])
 
 
@@ -78,20 +73,29 @@ def build_features(window):
 for message in consumer:
     data = message.value
     buffer.append(data)
-
     print("📥 Received:", data)
 
-    if len(buffer) < WINDOW_SIZE:
-        print(f"⏳ Waiting for {WINDOW_SIZE - len(buffer)} more messages")
+    # need 6 previous + current
+    if len(buffer) < WINDOW_SIZE + 1:
+        print(f"⏳ Waiting for {WINDOW_SIZE + 1 - len(buffer)} more messages")
         continue
 
-    X = build_features(buffer)
+    prev_window = list(buffer)[:-1]        # exclude current reading
+    X = build_features(prev_window)
+    prediction = float(engine.predict(X)[0])
 
-    prediction = engine.predict(X)[0]
+    print(f"📈 Prediction | time={data['timestamp']} | temp+1h={prediction:.2f}°C | model={engine.model_name}")
 
-    print(
-        f"📈 Prediction | time={data['timestamp']} "
-        f"| temp+1h={prediction:.2f}°C "
-        f"| model={engine.model_name}"
-    )
+    # Log prediction after it is computed
+    log_row = {
+        "timestamp": data["timestamp"],
+        "prediction": prediction,
+        "actual_temperature": None
+    }
+    log_path = "data/predictions/predictions.csv"
+    df_log = pd.DataFrame([log_row])
+    if not os.path.exists(log_path):
+        df_log.to_csv(log_path, index=False)
+    else:
+        df_log.to_csv(log_path, mode="a", header=False, index=False)
 
