@@ -25,6 +25,12 @@ def create_supervised_dataset(hourly_data, n_lags = 6):
 
     df["target_temp_t+1"] = df["temperature"].shift(-1)
     df = df.dropna().reset_index(drop=True)
+    df = df.drop(columns=[
+    "temperature",
+    "humidity",
+    "wind_speed",
+    "pressure"
+    ])
 
     return df
 

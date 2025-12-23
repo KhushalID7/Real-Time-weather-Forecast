@@ -1,8 +1,12 @@
 {
-  "model": "LinearRegression",
-  "val_mae": 0.7761857465634096,
-  "val_rmse": 0.9957623597545272,
-  "test_mae": 1.188717588147774,
-  "test_rmse": 1.3156828738307194,
-  "params": {}
+  "model": "GradientBoosting",
+  "val_mae": 1.226738978465908,
+  "val_rmse": 1.6173429746836059,
+  "test_mae": 2.965461590195424,
+  "test_rmse": 3.3594072882960213,
+  "params": {
+    "learning_rate": 0.05,
+    "max_depth": 3,
+    "n_estimators": 200
+  }
 }
