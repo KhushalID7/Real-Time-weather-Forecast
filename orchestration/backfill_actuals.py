@@ -23,7 +23,7 @@ PARAMS_BASE = {
 }
 
 
-def backfill():
+def backfill_actuals():
     if not os.path.exists(PRED_PATH):
         print("⚠️ No predictions file yet")
         return
@@ -58,4 +58,4 @@ def backfill():
 
 
 if __name__ == "__main__":
-    backfill()
+    backfill_actuals()

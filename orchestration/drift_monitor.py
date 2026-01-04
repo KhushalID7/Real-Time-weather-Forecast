@@ -74,25 +74,6 @@ def check_drift():
         print("✅ No drift detected")
 
 
-# -------------------------------------------------
-# Continuous Monitor
-# -------------------------------------------------
-def run_drift_monitor():
-    print("🛰️ Drift monitor started")
-    print(
-        f"🔁 Checking every {CHECK_INTERVAL_MINUTES} min | "
-        f"Window={ROLLING_WINDOW_HOURS}h | "
-        f"Threshold={DRIFT_MULTIPLIER}×"
-    )
-
-    while True:
-        try:
-            check_drift()
-        except Exception as e:
-            print("❌ Drift monitor error:", e)
-
-        time.sleep(CHECK_INTERVAL_MINUTES * 60)
-
-
 if __name__ == "__main__":
-    run_drift_monitor()
+    print("🛰️ Drift check callable via orchestration.drift_monitor.check_drift()")
+    check_drift()
