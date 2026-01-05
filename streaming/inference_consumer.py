@@ -15,7 +15,6 @@ from collections import deque
 from db.mongo_client import get_db
 from model.inference import ModelInferenceEngine
 
-# =========================================================
 # Configuration
 # =========================================================
 TOPIC = "weather_raw"

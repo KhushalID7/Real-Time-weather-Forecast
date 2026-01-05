@@ -53,4 +53,4 @@ while True:
     print("📤 Sent weather message:", message)
 
     # for testing you can reduce this to 30–60 seconds
-    time.sleep(60)
+    time.sleep(30)
