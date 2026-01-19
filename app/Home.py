@@ -24,7 +24,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st_autorefresh(interval=10_000, key="live_refresh")
+st_autorefresh(interval=3000, key="live_refresh")
 
 st.title("🟢 Live Monitoring — Real-Time Forecasting")
 

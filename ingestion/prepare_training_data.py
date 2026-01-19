@@ -1,44 +1,68 @@
 import os, sys
+import pandas as pd
+
+# -------------------------------------------------
+# Make project root importable
+# -------------------------------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-import os
-import requests
 from features.feature_engineering import create_supervised_dataset
 
-ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+RAW_PATH = "data/processed/weather_5y_raw.csv"
+SUPERVISED_PATH = "data/processed/supervised_weather.csv"
 
-params = {
-    "latitude": 23.2167,
-    "longitude": 72.6833,
-    "start_date": "2024-09-01",
-    "end_date": "2024-12-01",
-    "hourly": ",".join([
-        "temperature_2m",
-        "relative_humidity_2m",
-        "wind_speed_10m",
-        "surface_pressure"
-    ]),
-    "timezone": "auto"
-}
 
-response = requests.get(ARCHIVE_URL, params=params)
-response.raise_for_status()
+def prepare_supervised_from_5y_raw(n_lags=6):
+    if not os.path.exists(RAW_PATH):
+        raise FileNotFoundError(f"❌ Missing raw file: {RAW_PATH}")
 
-hourly_data = response.json()["hourly"]
+    df_raw = pd.read_csv(RAW_PATH, parse_dates=["timestamp"])
 
-df_supervised = create_supervised_dataset(hourly_data, n_lags=6)
+    # -------------------------------------------------
+    # Validate columns (YOUR actual schema)
+    # -------------------------------------------------
+    required_cols = ["timestamp", "temperature", "humidity", "wind_speed", "pressure"]
+    for c in required_cols:
+        if c not in df_raw.columns:
+            raise ValueError(f"❌ Column missing in raw file: {c}")
 
-output_dir = "data/processed"
-os.makedirs(output_dir, exist_ok=True)
+    # -------------------------------------------------
+    # Rename to match feature_engineering expectations
+    # -------------------------------------------------
+    df_raw = df_raw.rename(columns={
+        "timestamp": "time",
+        "temperature": "temperature_2m",
+        "humidity": "relative_humidity_2m",
+        "wind_speed": "wind_speed_10m",
+        "pressure": "surface_pressure",
+    })
 
-output_path = os.path.join(output_dir, "supervised_weather.csv")
-df_supervised.to_csv(output_path, index=False)
+    # -------------------------------------------------
+    # Convert to hourly_data dict
+    # -------------------------------------------------
+    hourly_data = {
+        "time": df_raw["time"].dt.strftime("%Y-%m-%dT%H:%M").tolist(),
+        "temperature_2m": df_raw["temperature_2m"].tolist(),
+        "relative_humidity_2m": df_raw["relative_humidity_2m"].tolist(),
+        "wind_speed_10m": df_raw["wind_speed_10m"].tolist(),
+        "surface_pressure": df_raw["surface_pressure"].tolist(),
+    }
 
-print("✅ Supervised dataset created")
-print("Path:", output_path)
-print("Dataset shape:", df_supervised.shape)
-print("Total NaNs:", df_supervised.isnull().sum().sum())
-print("Feature columns:", len(df_supervised.columns) - 2)
-print(df_supervised.head())
+    # -------------------------------------------------
+    # Create supervised dataset
+    # -------------------------------------------------
+    df_supervised = create_supervised_dataset(hourly_data, n_lags=n_lags)
+
+    os.makedirs(os.path.dirname(SUPERVISED_PATH), exist_ok=True)
+    df_supervised.to_csv(SUPERVISED_PATH, index=False)
+
+    print("✅ Supervised dataset created")
+    print("📄 Saved to:", SUPERVISED_PATH)
+    print("📊 Shape:", df_supervised.shape)
+    print("🧾 Columns:", list(df_supervised.columns))
+
+
+if __name__ == "__main__":
+    prepare_supervised_from_5y_raw(n_lags=6)

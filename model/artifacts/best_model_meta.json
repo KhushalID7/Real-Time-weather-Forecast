@@ -1,0 +1,37 @@
+{
+  "model_name": "HistGradientBoosting",
+  "val_rmse": 0.7685534315356288,
+  "params": {
+    "model__learning_rate": 0.05,
+    "model__max_depth": null,
+    "model__max_iter": 400
+  },
+  "feature_columns": [
+    "temp_t-1",
+    "humidity_t-1",
+    "wind_speed_t-1",
+    "pressure_t-1",
+    "temp_t-2",
+    "humidity_t-2",
+    "wind_speed_t-2",
+    "pressure_t-2",
+    "temp_t-3",
+    "humidity_t-3",
+    "wind_speed_t-3",
+    "pressure_t-3",
+    "temp_t-4",
+    "humidity_t-4",
+    "wind_speed_t-4",
+    "pressure_t-4",
+    "temp_t-5",
+    "humidity_t-5",
+    "wind_speed_t-5",
+    "pressure_t-5",
+    "temp_t-6",
+    "humidity_t-6",
+    "wind_speed_t-6",
+    "pressure_t-6",
+    "hour",
+    "day_of_week"
+  ]
+}

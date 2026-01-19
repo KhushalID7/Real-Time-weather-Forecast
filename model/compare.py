@@ -1,141 +1,181 @@
-import pandas as pd
-import joblib
+import os, sys
 import json
-import os
+import joblib
+import pandas as pd
 
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, HistGradientBoostingRegressor
 
+
+# -------------------------------------------------
+# Make project root importable
+# -------------------------------------------------
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 DATA_PATH = "data/processed/supervised_weather.csv"
 ARTIFACT_DIR = "model/artifacts"
 
-os.makedirs(ARTIFACT_DIR, exist_ok=True)
+BEST_MODEL_PATH = os.path.join(ARTIFACT_DIR, "best_model.pkl")
+BEST_META_PATH = os.path.join(ARTIFACT_DIR, "best_model_meta.json")
 
 
-def load_data():
-    df = pd.read_csv(DATA_PATH)
+def train_val_test_split_time(df, train_ratio=0.7, val_ratio=0.15):
+    """
+    Time-aware split:
+    Train = first 70%
+    Val   = next 15%
+    Test  = last 15%
+    """
+    n = len(df)
+    train_end = int(n * train_ratio)
+    val_end = int(n * (train_ratio + val_ratio))
 
-    target = "target_temp_t+1"
-    features = [c for c in df.columns if c not in ["timestamp", target]]
+    df_train = df.iloc[:train_end]
+    df_val = df.iloc[train_end:val_end]
+    df_test = df.iloc[val_end:]
 
-    X = df[features]
-    y = df[target]
-
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.30, shuffle=False
-    )
-
-    X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.50, shuffle=False
-    )
-
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return df_train, df_val, df_test
 
 
 def evaluate(model, X, y):
-    preds = model.predict(X)
-    return {
-        "mae": mean_absolute_error(y, preds),
-        "rmse": root_mean_squared_error(y, preds)
-    }
+    pred = model.predict(X)
+    mae = mean_absolute_error(y, pred)
+    rmse = root_mean_squared_error(y, pred)
+    return mae, rmse
 
 
 def main():
-    X_train, X_val, X_test, y_train, y_val, y_test = load_data()
+    if not os.path.exists(DATA_PATH):
+        raise FileNotFoundError(f"❌ Missing dataset: {DATA_PATH}")
 
-    experiments = []
+    os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
-    models = {
-        "LinearRegression": (
-            Pipeline([
-                ("scaler", StandardScaler()),
-                ("model", LinearRegression())
-            ]),
-            {}
-        ),
+    df = pd.read_csv(DATA_PATH, parse_dates=["timestamp"])
 
-        "Ridge": (
-            Pipeline([
-                ("scaler", StandardScaler()),
-                ("model", Ridge())
-            ]),
-            {"model__alpha": [0.01, 0.1, 1.0, 10.0]}
-        ),
+    target_col = "target_temp_t+1"
+    drop_cols = ["timestamp", target_col]
 
-        "Lasso": (
-            Pipeline([
-                ("scaler", StandardScaler()),
-                ("model", Lasso(max_iter=5000))
-            ]),
-            {"model__alpha": [0.001, 0.01, 0.1]}
-        ),
+    X = df.drop(columns=drop_cols)
+    y = df[target_col]
 
-        "RandomForest": (
-            RandomForestRegressor(random_state=42, n_jobs=-1),
-            {
-                "n_estimators": [100, 200],
-                "max_depth": [8, 12, None],
-                "min_samples_leaf": [3, 5]
-            }
-        ),
+    # Time split
+    df_train, df_val, df_test = train_val_test_split_time(df)
 
-        "GradientBoosting": (
-            GradientBoostingRegressor(random_state=42),
-            {
-                "n_estimators": [100, 200],
-                "learning_rate": [0.05, 0.1],
-                "max_depth": [2, 3]
-            }
+    X_train = df_train.drop(columns=drop_cols)
+    y_train = df_train[target_col]
+
+    X_val = df_val.drop(columns=drop_cols)
+    y_val = df_val[target_col]
+
+    X_test = df_test.drop(columns=drop_cols)
+    y_test = df_test[target_col]
+
+    # TimeSeries CV
+    tscv = TimeSeriesSplit(n_splits=5)
+
+    # -------------------------------------------------
+    # Models + grids
+    # -------------------------------------------------
+    models = [
+        ("LinearRegression", LinearRegression(), {}),
+        ("Ridge", Ridge(), {"model__alpha": [0.01, 0.1, 1.0, 10.0, 50.0]}),
+        ("RandomForest", RandomForestRegressor(random_state=42), {
+            "model__n_estimators": [200, 400],
+            "model__max_depth": [None, 10, 20],
+            "model__min_samples_leaf": [1, 3, 5],
+        }),
+        ("GradientBoosting", GradientBoostingRegressor(random_state=42), {
+            "model__n_estimators": [200, 400],
+            "model__learning_rate": [0.03, 0.05, 0.1],
+            "model__max_depth": [2, 3, 4],
+        }),
+        ("HistGradientBoosting", HistGradientBoostingRegressor(random_state=42), {
+            "model__learning_rate": [0.03, 0.05, 0.1],
+            "model__max_depth": [3, 5, None],
+            "model__max_iter": [200, 400],
+        })
+    ]
+
+    results = []
+    best_overall = None
+
+    for name, model, grid in models:
+        print(f"\n🔍 GridSearch: {name}")
+
+        # Scaling helps linear models, harmless for trees
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model)
+        ])
+
+        gs = GridSearchCV(
+            estimator=pipe,
+            param_grid=grid,
+            scoring="neg_root_mean_squared_error",
+            cv=tscv,
+            n_jobs=-1,
+            verbose=0
         )
-    }
 
-    for name, (model, grid) in models.items():
-        print(f"\n🔍 Tuning {name}")
+        gs.fit(X_train, y_train)
 
-        if grid:
-            search = GridSearchCV(
-                model,
-                grid,
-                scoring="neg_mean_absolute_error",
-                cv=3
-            )
-            search.fit(X_train, y_train)
-            best_model = search.best_estimator_
-            best_params = search.best_params_
-        else:
-            model.fit(X_train, y_train)
-            best_model = model
-            best_params = {}
+        best_model = gs.best_estimator_
+        best_params = gs.best_params_
 
-        val_metrics = evaluate(best_model, X_val, y_val)
-        test_metrics = evaluate(best_model, X_test, y_test)
+        val_mae, val_rmse = evaluate(best_model, X_val, y_val)
+        test_mae, test_rmse = evaluate(best_model, X_test, y_test)
 
-        experiments.append({
+        results.append({
             "model": name,
-            "val_mae": val_metrics["mae"],
-            "val_rmse": val_metrics["rmse"],
-            "test_mae": test_metrics["mae"],
-            "test_rmse": test_metrics["rmse"],
+            "val_mae": val_mae,
+            "val_rmse": val_rmse,
+            "test_mae": test_mae,
+            "test_rmse": test_rmse,
             "params": best_params
         })
 
-        joblib.dump(best_model, f"{ARTIFACT_DIR}/{name}_best.pkl")
+        print(f"✅ Best params: {best_params}")
+        print(f"📌 Val  MAE={val_mae:.4f} | RMSE={val_rmse:.4f}")
+        print(f"📌 Test MAE={test_mae:.4f} | RMSE={test_rmse:.4f}")
 
-    results = pd.DataFrame(experiments).sort_values("val_mae")
-    print("\n📊 Tuned Model Comparison")
-    print(results)
+        # Pick best by validation RMSE
+        if best_overall is None or val_rmse < best_overall["val_rmse"]:
+            best_overall = {
+                "model_name": name,
+                "model_obj": best_model,
+                "val_rmse": val_rmse,
+                "params": best_params
+            }
 
-    best = results.iloc[0]
-    with open(f"{ARTIFACT_DIR}/best_model.json", "w") as f:
-        json.dump(best.to_dict(), f, indent=2)
+    # -------------------------------------------------
+    # Save best model
+    # -------------------------------------------------
+    joblib.dump(best_overall["model_obj"], BEST_MODEL_PATH)
 
-    print(f"\n🏆 Selected Model: {best['model']}")
+    meta = {
+        "model_name": best_overall["model_name"],
+        "val_rmse": best_overall["val_rmse"],
+        "params": best_overall["params"],
+        "feature_columns": list(X.columns)
+    }
+
+    with open(BEST_META_PATH, "w") as f:
+        json.dump(meta, f, indent=2)
+
+    df_results = pd.DataFrame(results).sort_values("val_rmse")
+    print("\n📊 Tuned Model Comparison (sorted by val_rmse)")
+    print(df_results)
+
+    print("\n🏆 Best Model:", best_overall["model_name"])
+    print("💾 Saved:", BEST_MODEL_PATH)
+    print("📝 Meta:", BEST_META_PATH)
 
 
 if __name__ == "__main__":
