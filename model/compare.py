@@ -10,6 +10,8 @@ from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, HistGradientBoostingRegressor
+# optionally try xgboost if installed
+
 
 
 # -------------------------------------------------
@@ -102,6 +104,7 @@ def main():
             "model__max_iter": [200, 400],
         })
     ]
+    
 
     results = []
     best_overall = None

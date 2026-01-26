@@ -1,9 +1,9 @@
 {
-  "model_name": "GradientBoosting",
-  "val_rmse": 0.7852118911805305,
+  "model_name": "RandomForest",
+  "val_rmse": 0.7507591762621937,
   "params": {
-    "model__learning_rate": 0.1,
-    "model__max_depth": 3,
+    "model__max_depth": 20,
+    "model__min_samples_leaf": 3,
     "model__n_estimators": 400
   },
   "feature_columns": [
@@ -32,6 +32,16 @@
     "wind_speed_t-6",
     "pressure_t-6",
     "hour",
-    "day_of_week"
+    "day_of_week",
+    "month",
+    "day_of_year",
+    "sin_hour",
+    "cos_hour",
+    "sin_doy",
+    "cos_doy",
+    "temp_diff_1",
+    "temp_diff_2",
+    "temp_rm_3",
+    "temp_rm_6"
   ]
 }
