@@ -1,5 +1,5 @@
 import os, sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
@@ -15,6 +15,11 @@ if PROJECT_ROOT not in sys.path:
 load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 from db.mongo_client import get_db
+
+# -------------------------------------------------
+# IST Timezone
+# -------------------------------------------------
+IST = timezone(timedelta(hours=5, minutes=30))
 
 # -------------------------------------------------
 # Page config
@@ -35,20 +40,14 @@ db = get_db()
 predictions = db["predictions"]
 
 # -------------------------------------------------
-# Sidebar
+# Fetch recent predictions (24 hours default)
 # -------------------------------------------------
-st.sidebar.header("Live Controls")
-
-window_hours = st.sidebar.selectbox(
-    "View window (hours)",
-    [6, 12, 24, 48],
-    index=2
-)
-
-cutoff = datetime.utcnow() - timedelta(hours=window_hours)
+now_ist = datetime.now(IST)
+cutoff = now_ist - timedelta(hours=24)
+cutoff_iso = cutoff.isoformat()
 
 docs = list(predictions.find(
-    {"created_at": {"$gte": cutoff}},
+    {"created_at": {"$gte": cutoff_iso}},
     {"_id": 0}
 ).sort("created_at", 1))
 
@@ -69,9 +68,10 @@ with col1:
     st.metric("Predictions (window)", len(df))
 
 with col2:
+    last_pred = df["created_at"].max()
     st.metric(
         "Last Prediction",
-        df["created_at"].max().strftime("%Y-%m-%d %H:%M UTC")
+        last_pred if isinstance(last_pred, str) else last_pred[:19]
     )
 
 with col3:

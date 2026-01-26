@@ -1,6 +1,6 @@
 import os, sys
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # -------------------------------------------------
 # Make project root importable
@@ -16,11 +16,14 @@ from db.mongo_client import get_db
 # -------------------------------------------------
 OPEN_METEO_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 
+# IST Timezone
+IST = timezone(timedelta(hours=5, minutes=30))
+
 PARAMS_BASE = {
     "latitude": 23.2167,
     "longitude": 72.6833,
     "hourly": "temperature_2m",
-    "timezone": "auto"
+    "timezone": "Asia/Kolkata"
 }
 
 
@@ -39,16 +42,19 @@ def backfill_actuals():
         print("✅ No missing actuals")
         return
 
-    print(f"🔄 Backfilling {len(missing_docs)} predictions")
+    print(f"🔄 Backfilling {len(missing_docs)} predictions (IST)")
 
-    now_utc = datetime.utcnow()
+    now_ist = datetime.now(IST)
     
     for doc in missing_docs:
-        pred_time = datetime.fromisoformat(doc["timestamp"])
+        pred_time = datetime.fromisoformat(doc["timestamp"].replace('Z', '+00:00'))
+        if pred_time.tzinfo is None:
+            pred_time = pred_time.replace(tzinfo=IST)
+            
         target_time = pred_time + timedelta(hours=1)
     
-        # 🚨 Skip future actuals
-        if target_time > now_utc:
+        # 🚨 Skip future actuals (IST comparison)
+        if target_time > now_ist:
             print(f"⏭️ Skipping future target: {target_time}")
             continue
         
@@ -79,7 +85,7 @@ def backfill_actuals():
             print(f"✅ Backfilled {str(doc['_id'])[-6:]} → {actual_temp}°C")
 
 
-    print("🎉 Backfill complete")
+    print("🎉 Backfill complete (IST)")
 
 
 def _short_id(obj_id):

@@ -6,7 +6,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 import pandas as pd
 from kafka import KafkaConsumer
@@ -21,6 +21,9 @@ TOPIC = "weather_raw"
 BOOTSTRAP_SERVERS = "localhost:9092"
 WINDOW_SIZE = 6
 CONSUMER_GROUP = "weather-inference-group"
+
+# IST Timezone
+IST = timezone(timedelta(hours=5, minutes=30))
 
 # =========================================================
 # Kafka Consumer
@@ -42,7 +45,7 @@ buffer = deque(maxlen=WINDOW_SIZE + 1)  # current + 6 previous
 # Load Best Model
 # =========================================================
 engine = ModelInferenceEngine()
-print("🚀 Inference consumer started")
+print("🚀 Inference consumer started (IST)")
 
 # =========================================================
 # MongoDB
@@ -89,16 +92,21 @@ for message in consumer:
         f"| model={engine.model_name}"
     )
 
+    # Get current time in IST and format as ISO string
+    now_ist = datetime.now(IST)
+    created_at_ist = now_ist.isoformat()
+
     doc = {
         "timestamp": data["timestamp"],
         "prediction": prediction,
         "actual_temperature": None,
         "model_name": engine.model_name,
-        "created_at": datetime.utcnow()
+        "created_at": created_at_ist
     }
 
     try:
         result = predictions_col.insert_one(doc)
         print("✅ Mongo insert OK | _id =", result.inserted_id)
+        print(f"   🕐 Stored created_at (IST): {created_at_ist}")
     except Exception as e:
         print("❌ Mongo insert FAILED:", e)

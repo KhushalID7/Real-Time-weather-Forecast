@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -15,6 +15,8 @@ from orchestration.drift_monitor import check_drift
 from orchestration.data_retention import cleanup_old_predictions
 from orchestration.retrain_pipeline import retrain
 
+# IST Timezone
+IST = timezone(timedelta(hours=5, minutes=30))
 
 BACKFILL_INTERVAL_MIN = 60
 DRIFT_CHECK_INTERVAL_MIN = 60
@@ -37,7 +39,7 @@ def run_scheduler():
     global last_backfill, last_drift_check, last_retention, last_retrain
 
     print("=" * 60)
-    print("🕒 ML Orchestration Scheduler STARTED")
+    print("🕒 ML Orchestration Scheduler STARTED (IST)")
     print("🚀 Deployment-ready background services running")
     print("=" * 60)
     print()
@@ -49,14 +51,14 @@ def run_scheduler():
     print()
 
     while True:
-        now = datetime.utcnow()
+        now = datetime.now(IST)
 
         try:
             # -----------------------------
             # Backfill actual temperatures
             # -----------------------------
             if last_backfill is None or (now - last_backfill) >= timedelta(minutes=BACKFILL_INTERVAL_MIN):
-                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 🔁 Running backfill job")
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] 🔁 Running backfill job")
                 try:
                     backfill_actuals()
                     last_backfill = now
@@ -67,7 +69,7 @@ def run_scheduler():
             # Drift detection
             # -----------------------------
             if last_drift_check is None or (now - last_drift_check) >= timedelta(minutes=DRIFT_CHECK_INTERVAL_MIN):
-                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 📊 Running drift check")
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] 📊 Running drift check")
                 try:
                     check_drift()
                     last_drift_check = now
@@ -78,7 +80,7 @@ def run_scheduler():
             # Data retention (MongoDB cleanup)
             # -----------------------------
             if last_retention is None or (now - last_retention) >= timedelta(hours=RETENTION_INTERVAL_HOURS):
-                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 🧹 Running data retention cleanup")
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] 🧹 Running data retention cleanup")
                 try:
                     cleanup_old_predictions()
                     last_retention = now
@@ -89,7 +91,7 @@ def run_scheduler():
             # Time-based retraining (optional)
             # -----------------------------
             if last_retrain is None or (now - last_retrain) >= timedelta(hours=RETRAIN_INTERVAL_HOURS):
-                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] 🔄 Running scheduled retraining")
+                print(f"[{now.strftime('%Y-%m-%d %H:%M:%S %Z')}] 🔄 Running scheduled retraining")
                 try:
                     retrain()
                     last_retrain = now

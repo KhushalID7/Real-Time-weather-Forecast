@@ -17,4 +17,4 @@ python streaming/weather_producer.py
 python orchestration/scheduler.py
 
 
-
+streamlit run app/Home.py

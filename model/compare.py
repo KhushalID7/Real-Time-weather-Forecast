@@ -84,23 +84,23 @@ def main():
     # Models + grids
     # -------------------------------------------------
     models = [
-        ("LinearRegression", LinearRegression(), {}),
-        ("Ridge", Ridge(), {"model__alpha": [0.01, 0.1, 1.0, 10.0, 50.0]}),
-        ("RandomForest", RandomForestRegressor(random_state=42), {
-            "model__n_estimators": [200, 400],
-            "model__max_depth": [None, 10, 20],
-            "model__min_samples_leaf": [1, 3, 5],
-        }),
+        # ("LinearRegression", LinearRegression(), {}),
+        # ("Ridge", Ridge(), {"model__alpha": [0.01, 0.1, 1.0, 10.0, 50.0]}),
+        # ("RandomForest", RandomForestRegressor(random_state=42), {
+        #     "model__n_estimators": [200, 400],
+        #     "model__max_depth": [None, 10, 20],
+        #     "model__min_samples_leaf": [1, 3, 5],
+        # }),
         ("GradientBoosting", GradientBoostingRegressor(random_state=42), {
             "model__n_estimators": [200, 400],
             "model__learning_rate": [0.03, 0.05, 0.1],
             "model__max_depth": [2, 3, 4],
         }),
-        ("HistGradientBoosting", HistGradientBoostingRegressor(random_state=42), {
-            "model__learning_rate": [0.03, 0.05, 0.1],
-            "model__max_depth": [3, 5, None],
-            "model__max_iter": [200, 400],
-        })
+        # ("HistGradientBoosting", HistGradientBoostingRegressor(random_state=42), {
+        #     "model__learning_rate": [0.03, 0.05, 0.1],
+        #     "model__max_depth": [3, 5, None],
+        #     "model__max_iter": [200, 400],
+        # })
     ]
 
     results = []

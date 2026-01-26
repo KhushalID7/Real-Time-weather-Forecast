@@ -1,5 +1,6 @@
 import os, sys
 import pandas as pd
+from datetime import timezone, timedelta
 
 # -------------------------------------------------
 # Make project root importable
@@ -13,12 +14,21 @@ from features.feature_engineering import create_supervised_dataset
 RAW_PATH = "data/processed/weather_5y_raw.csv"
 SUPERVISED_PATH = "data/processed/supervised_weather.csv"
 
+# IST Timezone
+IST = timezone(timedelta(hours=5, minutes=30))
+
 
 def prepare_supervised_from_5y_raw(n_lags=6):
     if not os.path.exists(RAW_PATH):
         raise FileNotFoundError(f"❌ Missing raw file: {RAW_PATH}")
 
     df_raw = pd.read_csv(RAW_PATH, parse_dates=["timestamp"])
+    
+    # Ensure timestamps are in IST
+    if df_raw["timestamp"].dt.tz is None:
+        df_raw["timestamp"] = df_raw["timestamp"].dt.tz_localize('Asia/Kolkata')
+    else:
+        df_raw["timestamp"] = df_raw["timestamp"].dt.tz_convert('Asia/Kolkata')
 
     # -------------------------------------------------
     # Validate columns (YOUR actual schema)
@@ -58,7 +68,7 @@ def prepare_supervised_from_5y_raw(n_lags=6):
     os.makedirs(os.path.dirname(SUPERVISED_PATH), exist_ok=True)
     df_supervised.to_csv(SUPERVISED_PATH, index=False)
 
-    print("✅ Supervised dataset created")
+    print("✅ Supervised dataset created (IST)")
     print("📄 Saved to:", SUPERVISED_PATH)
     print("📊 Shape:", df_supervised.shape)
     print("🧾 Columns:", list(df_supervised.columns))
