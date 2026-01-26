@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
+import plotly.graph_objects as go
 
 # -------------------------------------------------
 # Path & env
@@ -69,11 +70,11 @@ rmse = (df["error"] ** 2).mean() ** 0.5
 mape = df["percent_error"].mean()
 
 # -------------------------------------------------
-# KPIs
+# KPIs (4 columns now, removed Time Range)
 # -------------------------------------------------
 st.subheader("📈 Evaluation Metrics")
 
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.metric("Evaluated", len(df))
@@ -87,19 +88,49 @@ with col3:
 with col4:
     st.metric("MAPE (%)", f"{mape:.2f}%")
 
-with col5:
-    st.metric("Time Range", "7d")
-
 # -------------------------------------------------
-# Charts
+# Charts (with zoom disabled)
 # -------------------------------------------------
 st.subheader("📉 Performance Analysis")
 
 st.subheader("Prediction vs Actual")
-chart_df = df.sort_values("timestamp")[["prediction", "actual_temperature"]].rename(
-    columns={"prediction": "Predicted", "actual_temperature": "Actual"}
+
+# Sort by timestamp
+chart_df = df.sort_values("timestamp").reset_index(drop=True)
+
+# Create Plotly chart with zoom disabled
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+    x=chart_df.index,
+    y=chart_df["prediction"],
+    mode='lines',
+    name='Predicted',
+    line=dict(color='#1f77b4')
+))
+
+fig.add_trace(go.Scatter(
+    x=chart_df.index,
+    y=chart_df["actual_temperature"],
+    mode='lines',
+    name='Actual',
+    line=dict(color='#ff7f0e')
+))
+
+fig.update_layout(
+    height=400,
+    xaxis_title="Index",
+    yaxis_title="Temperature (°C)",
+    hovermode='x unified',
+    showlegend=True,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    # Disable zoom and pan
+    xaxis=dict(fixedrange=True),
+    yaxis=dict(fixedrange=True),
+    dragmode=False
 )
-st.line_chart(chart_df, height=400)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # -------------------------------------------------
 # Detailed Table
