@@ -1,0 +1,11 @@
+requests
+pandas
+numpy
+kafka-python
+scikit-learn
+joblib
+python-dotenv
+pymongo
+streamlit
+plotly
+streamlit-autorefresh
