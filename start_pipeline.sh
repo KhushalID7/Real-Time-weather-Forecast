@@ -36,7 +36,7 @@ echo "✔ Scheduler started (PID: $!)"
 
 # 5. Start Streamlit
 echo "[5/5] Starting Streamlit Dashboard..."
-nohup streamlit run app/Home.py > streamlit.log 2>&1 &
+nohup streamlit run app/Home.py --server.address 0.0.0.0 > streamlit.log 2>&1 &
 echo "✔ Streamlit Dashboard started (PID: $!)"
 
 echo "======================================================="

@@ -29,7 +29,7 @@ start "Scheduler" cmd /k "python orchestration/scheduler.py"
 
 echo.
 echo [5/5] Starting Streamlit Dashboard...
-start "Streamlit Dashboard" cmd /k "streamlit run app/Home.py"
+start "Streamlit Dashboard" cmd /k "streamlit run app/Home.py --server.address 0.0.0.0"
 
 echo.
 echo =======================================================
