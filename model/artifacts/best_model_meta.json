@@ -1,10 +1,10 @@
 {
   "model_name": "RandomForest",
-  "val_rmse": 0.7507591762621937,
+  "val_rmse": 0.7511780962549435,
   "params": {
     "model__max_depth": 20,
     "model__min_samples_leaf": 3,
-    "model__n_estimators": 400
+    "model__n_estimators": 200
   },
   "feature_columns": [
     "temp_t-1",

@@ -7,7 +7,7 @@ echo.
 
 echo [1/5] Starting Kafka and Zookeeper via Docker...
 cd docker
-docker compose up -d
+docker-compose up -d
 cd ..
 echo Waiting for Kafka to be ready...
 timeout /t 10 /nobreak >nul
@@ -29,7 +29,7 @@ start "Scheduler" cmd /k "python orchestration/scheduler.py"
 
 echo.
 echo [5/5] Starting Streamlit Dashboard...
-start "Streamlit Dashboard" cmd /k "streamlit run app/Home.py --server.address 0.0.0.0"
+start "Streamlit Dashboard" cmd /k "streamlit run app/Home.py --server.address localhost"
 
 echo.
 echo =======================================================
