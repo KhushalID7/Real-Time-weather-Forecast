@@ -8,7 +8,7 @@ echo "======================================================="
 
 # 1. Start Kafka and Zookeeper
 echo "[1/5] Starting Kafka and Zookeeper via Docker..."
-cd docker && docker compose up -d
+cd docker && docker-compose up -d
 cd ..
 
 echo "Waiting for Kafka to be ready (10s)..."

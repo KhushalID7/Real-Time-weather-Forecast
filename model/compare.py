@@ -89,14 +89,14 @@ def main():
         ("LinearRegression", LinearRegression(), {}),
         ("Ridge", Ridge(), {"model__alpha": [0.01, 0.1, 1.0, 10.0, 50.0]}),
         ("RandomForest", RandomForestRegressor(random_state=42), {
-            "model__n_estimators": [200, 400],
-            "model__max_depth": [None, 10, 20],
-            "model__min_samples_leaf": [1, 3, 5],
+            "model__n_estimators": [100, 200],
+            "model__max_depth": [10, 20],
+            "model__min_samples_leaf": [3, 5],
         }),
         ("GradientBoosting", GradientBoostingRegressor(random_state=42), {
-            "model__n_estimators": [200, 400],
-            "model__learning_rate": [0.03, 0.05, 0.1],
-            "model__max_depth": [2, 3, 4],
+            "model__n_estimators": [100, 200],
+            "model__learning_rate": [0.05, 0.1],
+            "model__max_depth": [2, 3],
         }),
         ("HistGradientBoosting", HistGradientBoostingRegressor(random_state=42), {
             "model__learning_rate": [0.03, 0.05, 0.1],
@@ -118,13 +118,16 @@ def main():
             ("model", model)
         ])
 
+        # Use environment variable for n_jobs, default to 1 for memory safety on small droplets
+        n_jobs = int(os.environ.get("ML_N_JOBS", 1))
+
         gs = GridSearchCV(
             estimator=pipe,
             param_grid=grid,
             scoring="neg_root_mean_squared_error",
             cv=tscv,
-            n_jobs=-1,
-            verbose=0
+            n_jobs=n_jobs,
+            verbose=1  # increased verbose level slightly to show progress
         )
 
         gs.fit(X_train, y_train)
