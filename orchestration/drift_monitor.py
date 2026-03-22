@@ -34,7 +34,7 @@ DRIFT_MULTIPLIER = 1.5               # sensitivity
 # Helpers
 # -------------------------------------------------
 def load_baseline_mae():
-    path = os.path.join(PROJECT_ROOT, "model", "artifacts", "best_model.json")
+    path = os.path.join(PROJECT_ROOT, "model", "artifacts", "best_model_meta.json")
     with open(path, "r") as f:
         meta = json.load(f)
     return meta["test_mae"]

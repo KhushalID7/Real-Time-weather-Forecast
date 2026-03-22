@@ -5,7 +5,8 @@ import os
 
 
 ARTIFACT_DIR = "model/artifacts"
-BEST_MODEL_PATH = os.path.join(ARTIFACT_DIR, "best_model.json")
+BEST_MODEL_PATH = os.path.join(ARTIFACT_DIR, "best_model.pkl")
+BEST_META_PATH = os.path.join(ARTIFACT_DIR, "best_model_meta.json")
 
 
 class ModelInferenceEngine:
@@ -16,20 +17,16 @@ class ModelInferenceEngine:
 
     def load_best_model(self):
         """Load the best model based on metadata"""
-        with open(BEST_MODEL_PATH, "r") as f:
+        with open(BEST_META_PATH, "r") as f:
             metadata = json.load(f)
 
-        self.model_name = metadata["model"]
-        model_path = os.path.join(
-            ARTIFACT_DIR,
-            f"{self.model_name}_best.pkl"
-        )
+        # Backward-compatible name field
+        self.model_name = metadata.get("model_name") or metadata.get("model")
 
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found: {model_path}")
+        if not os.path.exists(BEST_MODEL_PATH):
+            raise FileNotFoundError(f"Model file not found: {BEST_MODEL_PATH}")
 
-        self.model = joblib.load(model_path)
-
+        self.model = joblib.load(BEST_MODEL_PATH)
         print(f"✅ Loaded best model: {self.model_name}")
 
     def predict(self, X: pd.DataFrame):

@@ -157,6 +157,8 @@ def main():
                 "model_name": name,
                 "model_obj": best_model,
                 "val_rmse": val_rmse,
+                "test_mae": test_mae,
+                "test_rmse": test_rmse,
                 "params": best_params
             }
 
@@ -168,6 +170,8 @@ def main():
     meta = {
         "model_name": best_overall["model_name"],
         "val_rmse": best_overall["val_rmse"],
+        "test_mae": best_overall["test_mae"],
+        "test_rmse": best_overall["test_rmse"],
         "params": best_overall["params"],
         "feature_columns": list(X.columns)
     }

@@ -9,6 +9,7 @@ if PROJECT_ROOT not in sys.path:
 from datetime import datetime, timezone, timedelta
 import json
 import pandas as pd
+import numpy as np
 from kafka import KafkaConsumer
 from collections import deque
 
@@ -56,6 +57,11 @@ predictions_col = db["predictions"]
 # =========================================================
 # Feature Builder (must match training exactly)
 # =========================================================
+META_PATH = os.path.join(PROJECT_ROOT, "model", "artifacts", "best_model_meta.json")
+with open(META_PATH, "r") as f:
+    META = json.load(f)
+FEATURE_COLUMNS = META.get("feature_columns")
+
 def build_features(prev_window):
     row = {}
     for i, record in enumerate(reversed(prev_window), start=1):
@@ -67,8 +73,28 @@ def build_features(prev_window):
     ts = pd.to_datetime(prev_window[-1]["timestamp"])
     row["hour"] = ts.hour
     row["day_of_week"] = ts.dayofweek
+    row["month"] = ts.month
+    row["day_of_year"] = ts.dayofyear
 
-    return pd.DataFrame([row])
+    # cyclic features
+    row["sin_hour"] = np.sin(2 * np.pi * row["hour"] / 24)
+    row["cos_hour"] = np.cos(2 * np.pi * row["hour"] / 24)
+    row["sin_doy"] = np.sin(2 * np.pi * row["day_of_year"] / 365.25)
+    row["cos_doy"] = np.cos(2 * np.pi * row["day_of_year"] / 365.25)
+
+    # slope / rolling features
+    row["temp_diff_1"] = row["temp_t-1"] - row["temp_t-2"]
+    row["temp_diff_2"] = row["temp_t-2"] - row["temp_t-3"]
+    row["temp_rm_3"] = (row["temp_t-1"] + row["temp_t-2"] + row["temp_t-3"]) / 3
+    row["temp_rm_6"] = (
+        row["temp_t-1"] + row["temp_t-2"] + row["temp_t-3"] +
+        row["temp_t-4"] + row["temp_t-5"] + row["temp_t-6"]
+    ) / 6
+
+    df = pd.DataFrame([row])
+    if FEATURE_COLUMNS:
+        df = df.reindex(columns=FEATURE_COLUMNS)
+    return df
 
 # =========================================================
 # Consume Messages & Run Inference
