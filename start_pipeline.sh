@@ -11,8 +11,8 @@ echo "[1/5] Starting Kafka and Zookeeper via Docker..."
 cd docker && docker compose up -d
 cd ..
 
-echo "Waiting for Kafka to be ready (10s)..."
-sleep 10
+echo "Waiting for Kafka to be ready (45s)..."
+sleep 45
 
 # 2. Prepare Data
 echo "[2/5] Preparing training data..."
