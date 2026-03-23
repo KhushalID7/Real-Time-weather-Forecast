@@ -176,6 +176,9 @@ start cmd /k "streamlit run app/Home.py"
 - Open: [http://139.59.70.121:8501/](http://139.59.70.121:8501/)
 - Note: This is HTTP, so the browser may show “Not secure” (expected without HTTPS).
 
+### Why no “proper” HTTPS deployment?
+For a fully production-style deployment (trusted HTTPS + a stable shareable URL), you typically need a domain name you control so a certificate authority (e.g., Let’s Encrypt) can issue a valid TLS certificate and browsers can verify it. This is a student project, so I’m intentionally not purchasing a domain; the demo is shared via the VM’s public IP over HTTP.
+
 ### VM Setup (one-time)
 ```bash
 sudo apt-get update
