@@ -173,7 +173,7 @@ start cmd /k "streamlit run app/Home.py"
 ## Deployment (Ubuntu VM)
 
 ### View Link (Live Demo)
-- Open: `http://139.59.70.121:8501/`
+- Open: [http://139.59.70.121:8501/](http://139.59.70.121:8501/)
 - Note: This is HTTP, so the browser may show “Not secure” (expected without HTTPS).
 
 ### VM Setup (one-time)
