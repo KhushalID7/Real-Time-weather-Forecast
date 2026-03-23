@@ -170,6 +170,61 @@ start cmd /k "streamlit run app/Home.py"
 
 ---
 
+## Deployment (Ubuntu VM)
+
+### View Link (Live Demo)
+- Open: `http://139.59.70.121:8501/`
+- Note: This is HTTP, so the browser may show “Not secure” (expected without HTTPS).
+
+### VM Setup (one-time)
+```bash
+sudo apt-get update
+sudo apt-get install -y git git-lfs python3 python3-venv python3-pip docker.io docker-compose
+sudo systemctl enable docker
+sudo systemctl start docker
+git lfs install
+```
+
+### Run on VM (manual)
+```bash
+cd /root
+git clone https://github.com/KhushalID7/Real-Time-weather-Forecast.git
+cd Real-Time-weather-Forecast
+git lfs pull
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+cd docker && sudo docker-compose up -d && cd ..
+sleep 45
+
+python ingestion/prepare_training_data.py
+python model/compare.py
+
+# Run services
+nohup python -u streaming/weather_producer.py > producer.log 2>&1 &
+nohup python -u streaming/inference_consumer.py > consumer.log 2>&1 &
+nohup python -u orchestration/scheduler.py > scheduler.log 2>&1 &
+nohup streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501 > streamlit.log 2>&1 &
+```
+
+### Run on VM (recommended: systemd)
+Use systemd for auto-start on boot and auto-restart on failures.
+
+Check status/logs:
+```bash
+sudo systemctl status weather-producer.service --no-pager
+sudo systemctl status weather-consumer.service --no-pager
+sudo systemctl status weather-scheduler.service --no-pager
+sudo systemctl status weather-streamlit.service --no-pager
+
+journalctl -u weather-producer.service -f
+journalctl -u weather-consumer.service -f
+```
+
+---
+
 ## 📚 Files Structure (summary)
 ```
 e:\CODES\Real Time weather Forecast\
