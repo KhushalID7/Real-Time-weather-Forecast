@@ -6,9 +6,6 @@ echo "    Starting Real-Time Weather Forecast Pipeline"
 echo "======================================================="
 
 # 0) Base deps (safe to re-run)
-echo "[0/7] Installing base packages..."
-sudo apt-get update -y
-sudo apt-get install -y git git-lfs curl ca-certificates python3 python3-venv python3-pip docker.io
 
 echo "[0/7] Enabling Docker..."
 sudo systemctl enable docker
