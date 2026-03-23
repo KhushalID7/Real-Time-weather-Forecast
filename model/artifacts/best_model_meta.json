@@ -1,6 +1,8 @@
 {
   "model_name": "RandomForest",
   "val_rmse": 0.7511780962549435,
+  "test_mae": 0.560989736765733,
+  "test_rmse": 0.8196271422701293,
   "params": {
     "model__max_depth": 20,
     "model__min_samples_leaf": 3,
