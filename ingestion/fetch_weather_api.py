@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -113,9 +114,15 @@ def fetch_current_weather(latitude=None, longitude=None):
         "timezone": "auto"
     }
 
-    r = requests.get(url, params=params, timeout=15)
-    r.raise_for_status()
-    data = r.json()
+    while True:
+        try:
+            r = requests.get(url, params=params, timeout=15)
+            r.raise_for_status()
+            data = r.json()
+            break
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Open-Meteo API failed/timed out. Retrying in 10s... Error: {e}")
+            time.sleep(10)
 
     hourly = data["hourly"]
     last_index = len(hourly["time"]) - 1
