@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: always
+
+  weather-producer:
+    build: .
+    command: python streaming/weather_producer.py
+    depends_on:
+      - kafka
+    env_file: .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    restart: always
+
+  inference-consumer:
+    build: .
+    command: python streaming/inference_consumer.py
+    depends_on:
+      - kafka
+    env_file: .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    restart: always
+
+  orchestrator:
+    build: .
+    command: python orchestration/scheduler.py
+    env_file: .env
+    restart: always
+
+  dashboard:
+    build: .
+    command: streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501
+    ports:
+      - "8501:8501"
+    env_file: .env
+    restart: always

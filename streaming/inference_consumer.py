@@ -19,7 +19,7 @@ from model.inference import ModelInferenceEngine
 # Configuration
 # =========================================================
 TOPIC = "weather_raw"
-BOOTSTRAP_SERVERS = "localhost:9092"
+BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 WINDOW_SIZE = 6
 CONSUMER_GROUP = "weather-inference-group"
 

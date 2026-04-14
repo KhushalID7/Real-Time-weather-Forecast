@@ -1,15 +1,20 @@
+import os
 import json
 import time
 import requests
+from dotenv import load_dotenv
 from kafka import KafkaProducer
 from datetime import datetime, timezone, timedelta
 
+load_dotenv()
+
+BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+TOPIC = "weather_raw"
+
 producer = KafkaProducer(
-    bootstrap_servers="localhost:9092",
+    bootstrap_servers=BOOTSTRAP_SERVERS,
     value_serializer=lambda v: json.dumps(v).encode("utf-8")
 )
-
-TOPIC = "weather_raw"
 
 # IST Timezone
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -19,9 +24,12 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # ----------------------------
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
+LAT = float(os.getenv("LATITUDE", 23.2167))
+LON = float(os.getenv("LONGITUDE", 72.6833))
+
 params = {
-    "latitude": 23.2167,
-    "longitude": 72.6833,
+    "latitude": LAT,
+    "longitude": LON,
     "hourly": ",".join([
         "temperature_2m",
         "relative_humidity_2m",
@@ -32,11 +40,16 @@ params = {
     "forecast_days": 1
 }
 
-print("🚀 Weather producer started (IST)")
+print(f"🚀 Weather producer started (IST) for Location: {LAT}, {LON}")
 
 while True:
-    response = requests.get(OPEN_METEO_URL, params=params)
-    response.raise_for_status()
+    try:
+        response = requests.get(OPEN_METEO_URL, params=params, timeout=15)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"⚠️ API Fetch failed: {e}. Retrying in 30s...")
+        time.sleep(30)
+        continue
 
     hourly = response.json()["hourly"]
 

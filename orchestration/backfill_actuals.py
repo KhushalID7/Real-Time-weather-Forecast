@@ -19,9 +19,12 @@ OPEN_METEO_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 # IST Timezone
 IST = timezone(timedelta(hours=5, minutes=30))
 
+LAT = float(os.getenv("LATITUDE", 23.2167))
+LON = float(os.getenv("LONGITUDE", 72.6833))
+
 PARAMS_BASE = {
-    "latitude": 23.2167,
-    "longitude": 72.6833,
+    "latitude": LAT,
+    "longitude": LON,
     "hourly": "temperature_2m",
     "timezone": "Asia/Kolkata"
 }
