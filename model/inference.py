@@ -1,5 +1,6 @@
 import json
 import joblib
+import sklearn
 import pandas as pd
 import os
 
@@ -26,8 +27,18 @@ class ModelInferenceEngine:
         if not os.path.exists(BEST_MODEL_PATH):
             raise FileNotFoundError(f"Model file not found: {BEST_MODEL_PATH}")
 
-        self.model = joblib.load(BEST_MODEL_PATH)
-        print(f"✅ Loaded best model: {self.model_name}")
+        print(f"DEBUG: Attempting to load model from: {os.path.abspath(BEST_MODEL_PATH)}")
+        print(f"DEBUG: File size: {os.path.getsize(BEST_MODEL_PATH)} bytes")
+        print(f"DEBUG: Local sklearn version: {sklearn.__version__}")
+        print(f"DEBUG: Local joblib version: {joblib.__version__}")
+
+        try:
+            self.model = joblib.load(BEST_MODEL_PATH)
+            print(f"✅ Loaded best model: {self.model_name}")
+        except Exception as e:
+            print(f"❌ CRITICAL LOAD ERROR: {e}")
+            print(f"System Info: Python={os.sys.version}")
+            raise e
 
     def predict(self, X: pd.DataFrame):
         """Run inference"""
