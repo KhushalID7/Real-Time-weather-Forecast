@@ -18,10 +18,10 @@ from model.inference import ModelInferenceEngine
 
 # Configuration
 # =========================================================
-TOPIC = "weather_raw"
-BOOTSTRAP_SERVERS = "localhost:9092"
-WINDOW_SIZE = 6
-CONSUMER_GROUP = "weather-inference-group"
+TOPIC = os.getenv("KAFKA_TOPIC", "weather_raw")
+BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+WINDOW_SIZE = int(os.getenv("WINDOW_SIZE", "6"))
+CONSUMER_GROUP = os.getenv("CONSUMER_GROUP", "weather-inference-group")
 
 # IST Timezone
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -54,10 +54,13 @@ print("🚀 Inference consumer started (IST)")
 db = get_db()
 predictions_col = db["predictions"]
 
-# =========================================================
 # Feature Builder (must match training exactly)
 # =========================================================
 META_PATH = os.path.join(PROJECT_ROOT, "model", "artifacts", "best_model_meta.json")
+if not os.path.exists(META_PATH):
+    # Fallback for different directory structures in Docker
+    META_PATH = "/app/model/artifacts/best_model_meta.json"
+
 with open(META_PATH, "r") as f:
     META = json.load(f)
 FEATURE_COLUMNS = META.get("feature_columns")

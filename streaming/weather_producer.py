@@ -4,12 +4,14 @@ import requests
 from kafka import KafkaProducer
 from datetime import datetime, timezone, timedelta
 
+import os
+BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+TOPIC = os.getenv("KAFKA_TOPIC", "weather_raw")
+
 producer = KafkaProducer(
-    bootstrap_servers="localhost:9092",
+    bootstrap_servers=BOOTSTRAP_SERVERS,
     value_serializer=lambda v: json.dumps(v).encode("utf-8")
 )
-
-TOPIC = "weather_raw"
 
 # IST Timezone
 IST = timezone(timedelta(hours=5, minutes=30))
