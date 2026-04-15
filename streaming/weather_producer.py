@@ -1,15 +1,12 @@
-import os
 import json
 import time
 import requests
-from dotenv import load_dotenv
 from kafka import KafkaProducer
 from datetime import datetime, timezone, timedelta
 
-load_dotenv()
-
+import os
 BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-TOPIC = "weather_raw"
+TOPIC = os.getenv("KAFKA_TOPIC", "weather_raw")
 
 producer = KafkaProducer(
     bootstrap_servers=BOOTSTRAP_SERVERS,
@@ -24,12 +21,9 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # ----------------------------
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
-LAT = float(os.getenv("LATITUDE", 23.2167))
-LON = float(os.getenv("LONGITUDE", 72.6833))
-
 params = {
-    "latitude": LAT,
-    "longitude": LON,
+    "latitude": 23.2167,
+    "longitude": 72.6833,
     "hourly": ",".join([
         "temperature_2m",
         "relative_humidity_2m",
@@ -40,16 +34,11 @@ params = {
     "forecast_days": 1
 }
 
-print(f"🚀 Weather producer started (IST) for Location: {LAT}, {LON}")
+print("🚀 Weather producer started (IST)")
 
 while True:
-    try:
-        response = requests.get(OPEN_METEO_URL, params=params, timeout=15)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"⚠️ API Fetch failed: {e}. Retrying in 30s...")
-        time.sleep(30)
-        continue
+    response = requests.get(OPEN_METEO_URL, params=params)
+    response.raise_for_status()
 
     hourly = response.json()["hourly"]
 

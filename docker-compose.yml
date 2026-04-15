@@ -5,8 +5,8 @@ services:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    restart: always
+    ports:
+      - "2181:2181"
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -21,16 +21,14 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    restart: always
 
   weather-producer:
     build: .
     command: python streaming/weather_producer.py
     depends_on:
       - kafka
-    env_file: .env
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     restart: always
 
   inference-consumer:
@@ -38,21 +36,30 @@ services:
     command: python streaming/inference_consumer.py
     depends_on:
       - kafka
-    env_file: .env
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    restart: always
-
-  orchestrator:
-    build: .
-    command: python orchestration/scheduler.py
-    env_file: .env
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
     restart: always
 
   dashboard:
     build: .
-    command: streamlit run app/Home.py --server.address 0.0.0.0 --server.port 8501
+    command: streamlit run app/Home.py --server.address 0.0.0.0
     ports:
       - "8501:8501"
-    env_file: .env
+    depends_on:
+      - kafka
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+    restart: always
+
+  scheduler:
+    build: .
+    command: python orchestration/scheduler.py
+    depends_on:
+      - kafka
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
     restart: always

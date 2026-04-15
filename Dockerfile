@@ -1,27 +1,25 @@
+# Use an official Python 3.10 slim image
 FROM python:3.10-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH /app
-
+# Set workspace
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (for some python packages if needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy the rest of the application
 COPY . .
 
-# Streamlit port
-EXPOSE 8501
+# Ensure the model artifacts directory exists
+RUN mkdir -p model/artifacts
 
-# Default command (will be overridden in docker-compose)
-CMD ["python", "app/Home.py"]
+# Default command (can be overridden in docker-compose)
+CMD ["python", "streaming/inference_consumer.py"]
