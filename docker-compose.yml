@@ -40,6 +40,8 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+    volumes:
+      - ./model/artifacts:/app/model/artifacts
     restart: always
 
   dashboard:
@@ -52,6 +54,8 @@ services:
     environment:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+    volumes:
+      - ./model/artifacts:/app/model/artifacts
     restart: always
 
   scheduler:
@@ -62,4 +66,6 @@ services:
     environment:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+    volumes:
+      - ./model/artifacts:/app/model/artifacts
     restart: always
