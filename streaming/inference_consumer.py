@@ -119,10 +119,10 @@ def build_features(prev_window):
 for message in consumer:
     data = message.value
     buffer.append(data)
-    print("📥 Received:", data)
+    print("📥 Received:", data, flush=True)
 
     if len(buffer) < WINDOW_SIZE + 1:
-        print(f"⏳ Waiting for {WINDOW_SIZE + 1 - len(buffer)} more messages")
+        print(f"⏳ Waiting for {WINDOW_SIZE + 1 - len(buffer)} more messages", flush=True)
         continue
 
     prev_window = list(buffer)[:-1]
@@ -132,7 +132,8 @@ for message in consumer:
     print(
         f"📈 Prediction | time={data['timestamp']} "
         f"| temp+1h={prediction:.2f}°C "
-        f"| model={engine.model_name}"
+        f"| model={engine.model_name}",
+        flush=True
     )
 
     # Get current time in IST and format as ISO string
@@ -149,7 +150,7 @@ for message in consumer:
 
     try:
         result = predictions_col.insert_one(doc)
-        print("✅ Mongo insert OK | _id =", result.inserted_id)
-        print(f"   🕐 Stored created_at (IST): {created_at_ist}")
+        print("✅ Mongo insert OK | _id =", result.inserted_id, flush=True)
+        print(f"   🕐 Stored created_at (IST): {created_at_ist}", flush=True)
     except Exception as e:
-        print("❌ Mongo insert FAILED:", e)
+        print("❌ Mongo insert FAILED:", e, flush=True)

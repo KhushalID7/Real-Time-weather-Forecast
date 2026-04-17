@@ -46,7 +46,7 @@ params = {
     "forecast_days": 1
 }
 
-print("🚀 Weather producer started (IST)")
+print("🚀 Weather producer started (IST)", flush=True)
 
 while True:
     response = requests.get(OPEN_METEO_URL, params=params)
@@ -75,7 +75,7 @@ while True:
             break
     
     if recent_idx is None:
-        print("⚠️ No current data available, skipping...")
+        print("⚠️ No current data available, skipping...", flush=True)
         time.sleep(30)
         continue
     
@@ -92,6 +92,6 @@ while True:
     producer.send(TOPIC, message)
     producer.flush()
 
-    print(f"📤 Sent weather message (IST): {message['timestamp']} | Temp: {message['temperature']}°C")
+    print(f"📤 Sent weather message (IST): {message['timestamp']} | Temp: {message['temperature']}°C", flush=True)
 
     time.sleep(30)
