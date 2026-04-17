@@ -2,16 +2,28 @@ import json
 import time
 import requests
 from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable
 from datetime import datetime, timezone, timedelta
 
 import os
 BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 TOPIC = os.getenv("KAFKA_TOPIC", "weather_raw")
 
-producer = KafkaProducer(
-    bootstrap_servers=BOOTSTRAP_SERVERS,
-    value_serializer=lambda v: json.dumps(v).encode("utf-8")
-)
+MAX_RETRIES = 16
+producer = None
+for i in range(MAX_RETRIES):
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=BOOTSTRAP_SERVERS,
+            value_serializer=lambda v: json.dumps(v).encode("utf-8")
+        )
+        break
+    except NoBrokersAvailable:
+        print(f"⏳ Waiting for Kafka to be ready... ({i+1}/{MAX_RETRIES})")
+        time.sleep(5)
+
+if producer is None:
+    raise RuntimeError("❌ Could not connect to Kafka after multiple retries.")
 
 # IST Timezone
 IST = timezone(timedelta(hours=5, minutes=30))

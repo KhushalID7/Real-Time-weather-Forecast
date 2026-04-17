@@ -29,13 +29,27 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # =========================================================
 # Kafka Consumer
 # =========================================================
-consumer = KafkaConsumer(
-    TOPIC,
-    bootstrap_servers=BOOTSTRAP_SERVERS,
-    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-    group_id=CONSUMER_GROUP,
-    auto_offset_reset="latest"
-)
+from kafka.errors import NoBrokersAvailable
+import time
+
+MAX_RETRIES = 12
+consumer = None
+for i in range(MAX_RETRIES):
+    try:
+        consumer = KafkaConsumer(
+            TOPIC,
+            bootstrap_servers=BOOTSTRAP_SERVERS,
+            value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+            group_id=CONSUMER_GROUP,
+            auto_offset_reset="latest"
+        )
+        break
+    except NoBrokersAvailable:
+        print(f"⏳ Waiting for Kafka to be ready... ({i+1}/{MAX_RETRIES})")
+        time.sleep(5)
+
+if consumer is None:
+    raise RuntimeError("❌ Could not connect to Kafka after multiple retries.")
 
 # =========================================================
 # Sliding Window Buffer
