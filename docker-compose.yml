@@ -46,7 +46,8 @@ services:
 
   dashboard:
     build: .
-    command: streamlit run app/Home.py --server.address 0.0.0.0
+    working_dir: /app/app
+    command: streamlit run Home.py --server.address 0.0.0.0
     ports:
       - "8501:8501"
     depends_on:
